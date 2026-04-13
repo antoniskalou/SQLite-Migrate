@@ -26,8 +26,10 @@ WriteMakefile(
     # TODO: pin versions
     'DBI' => 0,
     'DBD::SQLite' => 0,
+    'Path::Tiny' => 0,
   },
   TEST_REQUIRES => {
     'Test::More' => 0,
+    'Test::Exception' => 0,
   },
 )
