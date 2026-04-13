@@ -23,13 +23,13 @@ WriteMakefile(
   EXE_FILES => ['bin/sqlite-migrate'],
   MIN_PERL_VERSION => '5.26.0',
   PREREQ_PM => {
-    # TODO: pin versions
-    'DBI' => 0,
-    'DBD::SQLite' => 0,
-    'Path::Tiny' => 0,
+    'DBI' => '1.60',
+    'DBD::SQLite' => '1.68',
+    'Path::Tiny' => '0.144',
   },
   TEST_REQUIRES => {
     'Test::More' => 0,
     'Test::Exception' => 0,
+    'Test::Command' => 0,
   },
 )
