@@ -21,7 +21,7 @@ WriteMakefile(
   },
   VERSION_FROM => 'lib/SQLite/Migrate.pm',
   EXE_FILES => ['bin/sqlite-migrate'],
-  MIN_PERL_VERSION => '5.24.0',
+  MIN_PERL_VERSION => '5.26.0',
   PREREQ_PM => {
     # TODO: pin versions
     'DBI' => 0,
