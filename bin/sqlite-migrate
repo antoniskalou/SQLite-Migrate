@@ -1,8 +1,7 @@
 #!/usr/bin/env perl
 use v5.26;
-
-use FindBin;
-use lib "$FindBin::Bin/../lib";
+use strict;
+use warnings;
 
 use DBI qw();
 use DBD::SQLite::Constants qw(:dbd_sqlite_string_mode SQLITE_DETERMINISTIC);
@@ -13,11 +12,17 @@ use Getopt::Long qw(GetOptions);
 use Pod::Usage qw(pod2usage);
 
 my $help;
+my $migration_dir;
 GetOptions(
   'help|h' => \$help,
+  'dir=s' => \$migration_dir,
 ) or pod2usage(2);
 
 pod2usage(-verbose => 2) if $help;
+
+if (defined $migration_dir) {
+  $SQLite::Migrate::MIGRATION_DIR = $migration_dir;
+}
 
 my $command = shift @ARGV or pod2usage(-verbose => 1);
 my $db_path = path(shift @ARGV or pod2usage(-verbose => 1));
@@ -54,6 +59,12 @@ __END__
 
   migrate.pl deploy <db_path>
   migrate.pl rollback <db_path> [version]
+
+=head1 OPTIONS
+
+=head2 --dir <path>
+
+A directory containing migration files (defaults to ./sql).
 
 =head1 COMMANDS
 
