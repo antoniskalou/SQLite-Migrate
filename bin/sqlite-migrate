@@ -1,0 +1,81 @@
+#!/usr/bin/env perl
+use v5.40;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use DBI qw();
+use DBD::SQLite::Constants qw(:dbd_sqlite_string_mode SQLITE_DETERMINISTIC);
+use SQLite::Migrate qw(migrate rollback);
+use Path::Tiny qw(path);
+
+use Getopt::Long qw(GetOptions);
+use Pod::Usage qw(pod2usage);
+
+my $help;
+GetOptions(
+  'help|h' => \$help,
+) or pod2usage(2);
+
+pod2usage(-verbose => 2) if $help;
+
+my $command = shift @ARGV or pod2usage(-verbose => 1);
+my $db_path = path(shift @ARGV or pod2usage(-verbose => 1));
+# create parent dir if it doesn't exist
+$db_path->parent->mkdir unless $db_path->parent->exists;
+
+my $dbi = "dbi:SQLite:$db_path";
+my $dbh = DBI->connect($dbi, '', '', {
+  RaiseError => 1,
+  # auto-commit always on as per documentation recommendation
+  AutoCommit => 1,
+  # strictly enforce use of UTF-8
+  sqlite_string_mode => DBD_SQLITE_STRING_MODE_UNICODE_STRICT,
+  # dont allow features that might corrupt the DB
+  sqlite_defensive => 1,
+}) or die "failed to connect to database '$dbi': $DBI::errstr";
+
+my %command_to_sub = (
+  'deploy' => \&migrate,
+  'rollback' => \&rollback,
+);
+my $sub = $command_to_sub{$command} or pod2usage("Unknown command: $command");
+$sub->($dbh, @ARGV);
+
+__END__
+
+=head1 NAME
+
+  migrate.pl - Manage database migrations
+
+=head1 SYNOPSIS
+
+  migrate.pl <command> <db_path> [options]
+
+  migrate.pl deploy <db_path>
+  migrate.pl rollback <db_path> [version]
+
+=head1 COMMANDS
+
+=over 4
+
+=item B<deploy>
+
+Apply all pending migrations.
+
+=item B<rollback> [version]
+
+Rollback migrations.
+
+If C<version> is provided, the database will be rolled back to that specific
+version. Otherwise all migrations are reverted.
+
+=back
+
+=head1 EXAMPLES
+
+  migrate.pl deploy data/my.db
+  migrate.pl rollback data/my.db 2
+  migrate.pl rollback data/my.db
+
+=cut
