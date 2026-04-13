@@ -27,6 +27,35 @@ each migration increments the `user_version`.
 
 Assumes migrations are stored in the "sql" directory in the project root.
 
+# MIGRATIONS
+
+Migrations are assumed to be stored in the "sql" directory of your project's
+root. Each migration has a relevant `.up.sql` (upwards migration) and an
+optional `.down.sql` (downwards migration) associated with it.
+
+Migrations are run in order of their filename, so a migration called `000_initial`
+will run before `001_second_migration`.
+
+For example:
+
+    # sql/000_initial.up.sql
+
+    create table my_table(
+      id integer primary key autoincrement,
+      stuff text not null
+    );
+
+    # sql/000_initial.down.sql
+
+    drop table my_table;
+
+# NOTES
+
+This migration tool is rather simple, it will not protect you from corrupting
+your DB. If a migration is partially applied, as in it applies some operations,
+but fails before it can complete, then the database will be left in a corrupted
+state.
+
 # FUNCTIONS
 
 ## migrate
