@@ -26,10 +26,11 @@ WriteMakefile(
     'DBI' => '1.60',
     'DBD::SQLite' => '1.68',
     'Path::Tiny' => '0.144',
+    'Getopt::Long' => 0,
+    'Pod::Usage' => 0,
   },
   TEST_REQUIRES => {
     'Test::More' => 0,
     'Test::Exception' => 0,
-    'Test::Command' => 0,
   },
 )

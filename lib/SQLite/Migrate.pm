@@ -97,6 +97,7 @@ my sub user_version {
 my sub run_sql_file {
   my ($dbh, $file) = @_;
   my $sql = $file->slurp_utf8;
+  say $sql;
   $dbh->do($sql) or croak "Failed to run $file: " . $dbh->errstr;
 }
 
