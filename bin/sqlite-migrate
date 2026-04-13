@@ -11,14 +11,14 @@ __END__
 
 =head1 NAME
 
-  sqitch-migrate - Manage database migrations
+  sqlite-migrate - Manage database migrations
 
 =head1 SYNOPSIS
 
-  sqitch-migrate <command> <db_path> [options]
+  sqlite-migrate <command> <db_path> [options]
 
-  sqitch-migrate deploy <db_path>
-  sqitch-migrate rollback <db_path> [version]
+  sqlite-migrate deploy <db_path>
+  sqlite-migrate rollback <db_path> [version]
 
 =head1 OPTIONS
 
@@ -46,7 +46,7 @@ version. Otherwise all migrations are reverted.
 =head1 EXAMPLES
 
   sqlite-migrate deploy data/my.db
-  sqitch-migrate rollback data/my.db 2
-  sqitch-migrate rollback data/my.db
+  sqlite-migrate rollback data/my.db 2
+  sqlite-migrate rollback data/my.db
 
 =cut
