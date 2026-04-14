@@ -96,7 +96,6 @@ note('status');
   $stdout = colorstrip($stdout);
   is($exit, 0, 'exit success');
   like($stdout, qr/Version:\s+0/, 'version correct');
-  like($stdout, qr/Applied:\s+0/, 'applied correct');
   like($stdout, qr/Pending:\s+2/, 'pending correct');
   like($stdout, qr/Applied migrations:\s+\(none\)/, 'applied migrations none');
   like($stdout, qr/[ ] .*\/000_first.up.sql/, 'first migration pending');

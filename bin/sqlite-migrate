@@ -27,6 +27,10 @@ __END__
 
 A directory containing migration files (defaults to ./sql).
 
+=head2 -v, --verbose
+
+Enable verbose mode, will print all executed SQL statements.
+
 =head1 COMMANDS
 
 =over 4
@@ -60,5 +64,13 @@ version. Otherwise all migrations are reverted.
   sqlite-migrate deploy data/my.db
   sqlite-migrate rollback data/my.db 2
   sqlite-migrate rollback data/my.db
+
+=head1 ENVIRONMENT
+
+=head2 NO_COLOR
+
+Set to true if colored output should be disabled. By default the program avoids
+printing colored output if C<STDOUT> is not a TTY, but it can also be disabled
+this way.
 
 =cut

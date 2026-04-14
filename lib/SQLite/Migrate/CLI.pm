@@ -14,36 +14,45 @@ use Getopt::Long qw(GetOptionsFromArray);
 use Pod::Usage qw(pod2usage);
 use Term::ANSIColor qw(colored);
 
-# TODO: consider moving to different module
-my sub info { say colored(shift, 'blue') }
-my sub success { say colored(shift, 'green') }
-my sub warn { say colored(shift, 'yellow') }
-my sub fail { say STDERR colored(shift, 'red') }
-
 my $VERBOSE = 0;
+my $USE_COLOR = -t STDOUT;
+
+my sub color {
+  my ($text, $style) = @_;
+  $USE_COLOR ? colored($text, $style) : $text;
+}
+
+my sub info { say color(shift, 'blue') }
+my sub success { say color(shift, 'green') }
+my sub fail {
+  my ($text) = @_;
+  my $output = -t STDERR ? colored($text, 'red') : $text;
+  say STDERR $output;
+}
+
 my $FANCY_LOGGER = sub {
   my (%event) = @_;
   my $type = $event{type};
 
   if ($type eq 'skip') {
-    say colored("[SKIP]", 'yellow')
+    say color("[SKIP]", 'yellow')
       . " $event{file} "
-      . colored("(already applied)", 'faint');
+      . color("(already applied)", 'faint');
   } elsif ($type eq 'apply') {
     my $dir = uc($event{direction});
     my $color = $dir eq 'UP' ? 'green'
               : $dir eq 'DOWN' ? 'red'
               : 'faint';
 
-    say colored("[$dir]", $color)
+    say color("[$dir]", $color)
       . " $event{file} "
-      . colored("→ user_version=$event{version}", 'cyan');
+      . color("→ user_version=$event{version}", 'cyan');
   } elsif ($type eq 'done') {
-    say colored('[DONE]', 'blue')
+    say color('[DONE]', 'blue')
       . ' user_version='
-      . colored($event{version}, 'bold green');
+      . color($event{version}, 'bold green');
   } elsif ($type eq 'sql') {
-    say colored($event{sql}, 'faint') if $VERBOSE;
+    say color($event{sql}, 'faint') if $VERBOSE;
   }
 };
 
@@ -127,25 +136,25 @@ my sub cmd_status {
   info "Database status";
   say "──────────────";
 
-  printf "%-10s %s\n", "Version:", colored($version, 'green');
-  printf "%-10s %s\n", "Pending:", colored(scalar(@pending), 'yellow');
+  printf "%-10s %s\n", "Version:", color($version, 'green');
+  printf "%-10s %s\n", "Pending:", color(scalar(@pending), 'yellow');
 
   say "";
   
-  say colored("Applied migrations:", 'bold');
+  say color("Applied migrations:", 'bold');
   if (@applied) {
-    say map { '  ' . colored("✓ $_\n", 'green')  } @applied;
+    say map { '  ' . color("✓ $_\n", 'green')  } @applied;
   } else {
-    say colored('  (none)', 'faint');
+    say color('  (none)', 'faint');
   }
 
   say "";
 
-  say colored("Pending migrations:", 'bold');
+  say color("Pending migrations:", 'bold');
   if (@pending) {
-    say map { '  ' . colored("• $_\n", 'yellow') } @pending;
+    say map { '  ' . color("• $_\n", 'yellow') } @pending;
   } else {
-    say colored('  (none)', 'faint');
+    say color('  (none)', 'faint');
   }
   
   0;
