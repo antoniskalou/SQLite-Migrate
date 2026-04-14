@@ -91,7 +91,7 @@ my sub user_version {
   my ($dbh, $set) = @_;
   $dbh->do("pragma user_version=$set") if defined $set;
   my ($version) = $dbh->selectrow_array('pragma user_version');
-  $version;
+  $version + 0; # force numeric
 }
 
 my sub run_sql_file {
@@ -182,11 +182,73 @@ sub rollback {
 
 Return the current version (defined by C<user_version>) of the database.
 
+This value corresponds to the number of migrations that have been applied.
+A value of C<0> means no migrations have been applied yet.
+
 =cut
 
 sub version {
   my ($dbh) = @_;
   user_version($dbh);
+}
+
+=head2 status
+
+  my $status = status($dbh);
+
+Returns a hashref describing the current migration state of the database.
+
+The returned hashref has the following structure:
+
+  {
+    version => $int,
+    applied => \@applied,
+    pending => \@pending,
+  }
+
+=over 4
+
+=item * version
+
+Same as the result of calling L</version>.
+
+=item * applied
+
+An arrayref of migrations that have already been applied, in the order
+they were executed.
+
+If C<version> is C<0>, this will be an empty array.
+
+=item * pending
+
+An arrayref of migrations that have not yet been applied, in execution order.
+
+If all migrations have been applied, this will be an empty array.
+
+=back
+
+The C<applied> and C<pending> arrays are derived from the full list of available
+migrations, split at the current version boundary.
+
+=cut
+
+sub status {
+  my ($dbh) = @_;
+
+  my $version = user_version($dbh);
+  my @migrations = migrations('up');
+
+  my @applied = grep { $_ < $version } 0..$#migrations;
+  my @pending = grep { $_ >= $version } 0..$#migrations;
+
+  @applied = @migrations[@applied];
+  @pending = @migrations[@pending];
+
+  {
+    version => $version,
+    pending => \@pending,
+    applied => \@applied,
+  };
 }
 
 1;

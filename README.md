@@ -87,3 +87,40 @@ Returns the latest migration number that was rolled back to.
     my $version = version($dbh);
 
 Return the current version (defined by `user_version`) of the database.
+
+This value corresponds to the number of migrations that have been applied.
+A value of `0` means no migrations have been applied yet.
+
+## status
+
+    my $status = status($dbh);
+
+Returns a hashref describing the current migration state of the database.
+
+The returned hashref has the following structure:
+
+    {
+      version => $int,
+      applied => \@applied,
+      pending => \@pending,
+    }
+
+- version
+
+    Same as the result of calling ["version"](#version).
+
+- applied
+
+    An arrayref of migrations that have already been applied, in the order
+    they were executed.
+
+    If `version` is `0`, this will be an empty array.
+
+- pending
+
+    An arrayref of migrations that have not yet been applied, in execution order.
+
+    If all migrations have been applied, this will be an empty array.
+
+The `applied` and `pending` arrays are derived from the full list of available
+migrations, split at the current version boundary.
