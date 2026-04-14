@@ -38,12 +38,13 @@ my sub error {
 my sub connect_db {
   my ($db_path) = @_;
 
+  return (undef, usage(1)) unless defined $db_path;
   my $path = path($db_path);
   # create parent dir if needed
   $path->parent->mkdir unless $path->parent->exists;
 
   my $dbi = "dbi:SQLite:$path";
-  DBI->connect($dbi, '', '', {
+  my $dbh = DBI->connect($dbi, '', '', {
     RaiseError => 1,
     # auto-commit always on as per documentation recommendation
     AutoCommit => 1,
@@ -52,6 +53,10 @@ my sub connect_db {
     # dont allow features that might corrupt the DB
     sqlite_defensive => 1,
   });
+
+  defined $dbh
+    ? ($dbh, undef)
+    : (undef, error("failed to connect to database '$dbi': $DBI::errstr"));
 }
 
 my sub cmd_init {
@@ -65,16 +70,20 @@ SQL
   
   my $dir = path($SQLite::Migrate::MIGRATION_DIR);
   $dir->mkdir;
-  $dir->child('000_init.up.sql')->spew_utf8($sql);
-  $dir->child('000_init.down.sql')->spew_utf8($sql);
+
+  my $up = $dir->child('000_init.up.sql');
+  my $down = $dir->child('000_init.down.sql');
+
+  $up->spew_utf8($sql) unless $up->exists;
+  $down->spew_utf8($sql) unless $down->exists;
   say "Initialized migration directory at ${\$dir->absolute}";
   0;
 }
 
 my sub cmd_status {
   my ($args) = @_;
-  my $dbh = connect_db($args->{db_path})
-    or return error("failed to connect to DB");
+  my ($dbh, $exit) = connect_db($args->{db_path});
+  return $exit if defined $exit;
 
   my $status = SQLite::Migrate::status($dbh);
   my $version = $status->{version};
@@ -109,16 +118,18 @@ my sub cmd_status {
 
 my sub cmd_deploy {
   my ($args) = @_;
-  my $dbh = connect_db($args->{db_path})
-    or return error("failed to connect to DB");
+
+  my ($dbh, $exit) = connect_db($args->{db_path});
+  return $exit if defined $exit;
+
   SQLite::Migrate::migrate($dbh, @{ $args->{extra_args} });
   0;
 }
 
 my sub cmd_rollback {
   my ($args) = @_;
-  my $dbh = connect_db($args->{db_path})
-    or return error("failed to connect to DB");
+  my ($dbh, $exit) = connect_db($args->{db_path});
+  return $exit if defined $exit;
   SQLite::Migrate::rollback($dbh, @{ $args->{extra_args} });
   0;
 }
@@ -166,8 +177,8 @@ my sub run_command {
   my $cmd = $COMMANDS{$args->{command}}
     or return error("unknown command: ${\$args->{command}}", 2);
 
-  eval { $cmd->($args) };
-  return $@ ? error($@) : 0;
+  my $exit = eval { $cmd->($args) };
+  return $@ ? error($@) : $exit;
 }
 
 sub run {

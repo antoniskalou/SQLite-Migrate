@@ -67,6 +67,23 @@ note('invalid command');
   is($exit, 2, 'exit with failure');
 }
 
+note('init is idempotent');
+{
+  is(run_cmd('init'), 0, 'exit success');
+
+  my %files = (
+    up => $test_dir->child('000_init.up.sql'),
+    down => $test_dir->child('000_init.down.sql'),
+  );
+
+  ok($_->is_file, "$_ exists") for values %files;
+
+  my %stat = map { $_ => $files{$_}->stat } keys %files;
+  is(run_cmd('init'), 0, 'exit success');
+  is_deeply($files{$_}->stat, $stat{$_}, "$_ file unchanged")
+    for keys %files;
+}
+
 note('deploy');
 {
   my $exit;
