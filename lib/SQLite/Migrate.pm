@@ -5,6 +5,7 @@ use strict;
 use warnings;
 use utf8;
 use open qw(:std :encoding(UTF-8));
+use Data::Dumper;
 use DBI;
 use Path::Tiny qw(path);
 use Carp qw(croak);
@@ -80,6 +81,31 @@ state.
 # way of doing this
 our $MIGRATION_DIR = 'sql';
 
+my $DEFAULT_LOGGER = sub {
+  my (%event) = @_;
+  my $type = $event{type};
+
+  if ($type eq 'skip') {
+    printf("[SKIP] %s (already applied)\n", $event{file});
+  } elsif ($type eq 'apply') {
+    printf(
+      "[%s] %s → user_version=%d\n",
+      uc($event{direction}),
+      $event{file},
+      $event{version},
+    );
+  } elsif ($type eq 'sql') {
+    say $event{sql};   
+  } elsif ($type eq 'done') {
+     printf(
+       "[DONE] user_version=%d\n",
+       $event{version}
+     );
+  } else {
+     say Dumper(\%event);   
+  }
+};
+
 my sub migrations {
   my ($direction) = @_;
   sort { $a->basename cmp $b->basename }
@@ -95,15 +121,17 @@ my sub user_version {
 }
 
 my sub run_sql_file {
-  my ($dbh, $file) = @_;
+  my ($dbh, $file, $log) = @_;
   my $sql = $file->slurp_utf8;
-  say $sql;
+  $log->(type => 'sql', sql => $sql);
   $dbh->do($sql) or croak "Failed to run $file: " . $dbh->errstr;
 }
 
 my sub apply_migrations {
-  my ($dbh, $direction, $target) = @_;
+  my ($dbh, $direction, $target, %opts) = @_;
   local $dbh->{sqlite_allow_multiple_statements} = 1;
+
+  my $log = $opts{log} // $DEFAULT_LOGGER;
 
   my $version = user_version($dbh);
   my @files = migrations($direction);
@@ -118,22 +146,26 @@ my sub apply_migrations {
 
     if (($direction eq 'up' && $i < $version) ||
         ($direction eq 'down' && $i >= $version)) {
-      say "[SKIP] $name (already applied)";
+      $log->(type => 'skip', file => $name);
       next;
     }
 
     $version += $direction eq 'up' ? 1 : -1;
-    say sprintf("[%s] %s → user_version=%d",
-                uc($direction), $name, $version);
+    $log->(
+      type => 'apply',
+      file => $name,
+      direction => $direction,
+      version => $version,
+    );
 
-    run_sql_file($dbh, $file);
+    run_sql_file($dbh, $file, $log);
     user_version($dbh, $version);
 
     last if defined $target && $version == $target;
   }
 
   my $final = user_version($dbh);
-  say "[DONE] user_version=$final";
+  $log->(type => 'done', version => $final);
   $final;
 }
 
@@ -151,8 +183,8 @@ Returns the latest migration number that was applied.
 =cut
 
 sub migrate {
-  my ($dbh) = @_;
-  apply_migrations($dbh, 'up')
+  my ($dbh, %opts) = @_;
+  apply_migrations($dbh, 'up', undef, %opts)
 }
 
 =head2 rollback
@@ -171,9 +203,9 @@ Returns the latest migration number that was rolled back to.
 =cut
 
 sub rollback {
-  my ($dbh, $target) = @_;
+  my ($dbh, $target, %opts) = @_;
   $target //= 0;
-  apply_migrations($dbh, 'down', $target)
+  apply_migrations($dbh, 'down', $target, %opts)
 }
 
 =head2 version

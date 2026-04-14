@@ -20,6 +20,33 @@ my sub success { say colored(shift, 'green') }
 my sub warn { say colored(shift, 'yellow') }
 my sub fail { say STDERR colored(shift, 'red') }
 
+my $VERBOSE = 0;
+my $FANCY_LOGGER = sub {
+  my (%event) = @_;
+  my $type = $event{type};
+
+  if ($type eq 'skip') {
+    say colored("[SKIP]", 'yellow')
+      . " $event{file} "
+      . colored("(already applied)", 'faint');
+  } elsif ($type eq 'apply') {
+    my $dir = uc($event{direction});
+    my $color = $dir eq 'UP' ? 'green'
+              : $dir eq 'DOWN' ? 'red'
+              : 'faint';
+
+    say colored("[$dir]", $color)
+      . " $event{file} "
+      . colored("→ user_version=$event{version}", 'cyan');
+  } elsif ($type eq 'done') {
+    say colored('[DONE]', 'blue')
+      . ' user_version='
+      . colored($event{version}, 'bold green');
+  } elsif ($type eq 'sql') {
+    say colored($event{sql}, 'faint') if $VERBOSE;
+  }
+};
+
 my sub usage {
   my ($exit) = @_;
   pod2usage(
@@ -101,8 +128,7 @@ my sub cmd_status {
   say "──────────────";
 
   printf "%-10s %s\n", "Version:", colored($version, 'green');
-  printf "%-10s %d\n", "Applied:", scalar(@applied);
-  printf "%-10s %d\n", "Pending:", scalar(@pending);
+  printf "%-10s %s\n", "Pending:", colored(scalar(@pending), 'yellow');
 
   say "";
   
@@ -130,8 +156,7 @@ my sub cmd_deploy {
 
   my ($dbh, $exit) = connect_db($args->{db_path});
   return $exit if defined $exit;
-
-  SQLite::Migrate::migrate($dbh, @{ $args->{extra_args} });
+  SQLite::Migrate::migrate($dbh, log => $FANCY_LOGGER);
   0;
 }
 
@@ -139,7 +164,9 @@ my sub cmd_rollback {
   my ($args) = @_;
   my ($dbh, $exit) = connect_db($args->{db_path});
   return $exit if defined $exit;
-  SQLite::Migrate::rollback($dbh, @{ $args->{extra_args} });
+  SQLite::Migrate::rollback($dbh, $args->{extra_args}->[0],
+    log => $FANCY_LOGGER
+  );
   0;
 }
 
@@ -152,6 +179,7 @@ my sub parse_args {
   GetOptionsFromArray(
     \@argv,
     'help|h' => \$help,
+    'verbose|v' => \$VERBOSE,
     'dir=s' => \$migration_dir,
   ) or return (undef, usage(2));
 
