@@ -171,11 +171,19 @@ my sub cmd_deploy {
 
 my sub cmd_rollback {
   my ($args) = @_;
+
+  my $target;
+  # FIXME: return usage for specifically this command
+  GetOptionsFromArray(
+    $args->{extra_args},
+    'target|t=i' => \$target,
+  ) or return (undef, usage(2));
+  say "target: $target";
+
   my ($dbh, $exit) = connect_db($args->{db_path});
   return $exit if defined $exit;
-  SQLite::Migrate::rollback($dbh, $args->{extra_args}->[0],
-    log => $FANCY_LOGGER
-  );
+  
+  SQLite::Migrate::rollback($dbh, $target, log => $FANCY_LOGGER);
   0;
 }
 
@@ -185,6 +193,9 @@ my sub parse_args {
   my $help;
   my $migration_dir;
 
+  # ignore arguments we don't recongize
+  # TODO: determine if this is the best way to handle this
+  Getopt::Long::Configure('pass_through');
   GetOptionsFromArray(
     \@argv,
     'help|h' => \$help,

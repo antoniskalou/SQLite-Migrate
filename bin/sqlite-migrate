@@ -50,7 +50,7 @@ Example:
 
 Apply all pending migrations.
 
-=item B<rollback> [version]
+=item B<rollback> [--target=version]
 
 Rollback migrations.
 

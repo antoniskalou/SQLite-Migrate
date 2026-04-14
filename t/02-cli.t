@@ -115,7 +115,7 @@ note('rollback to version');
 {
   my $exit;
   stdout_like {
-    $exit = run_cmd('rollback', '1');
+    $exit = run_cmd('rollback', '--target', '1');
   } qr/user_version=1/, 'user_version=1';
   is($exit, 0, 'exit success');
 }
