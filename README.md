@@ -1,6 +1,6 @@
 # NAME
 
-SQLite::Migration
+SQLite::Migration - Lightweight migration tool/library for SQLite
 
 # SYNOPSIS
 

@@ -16,7 +16,7 @@ our @EXPORT_OK = qw(migrate rollback version status);
 
 =head1 NAME
 
-SQLite::Migration
+SQLite::Migration - Lightweight migration tool/library for SQLite
 
 =head1 SYNOPSIS
 
