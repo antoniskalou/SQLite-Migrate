@@ -36,14 +36,20 @@ SQLite::Migration - Lightweight migration tool/library for SQLite
 
 Utilities for migrating a SQLite database forward and backwards. Its a
 lightweight alternative to tools like L<App::Sqitch>, allowing a simple
-programmable interface to do migrations.
+programmable interface to do migrations, that also provides a CLI for
+convenience.
 
 Unlike App::Sqitch, this util doesn't store its migrations in a specific table,
 but instead uses C<pragma user_version> to keep track of which migration number
 we are at. Migrations start at 0 (0 being equal to no migrations applied) and
 each migration increments the C<user_version>.
 
-Assumes migrations are stored in the "sql" directory in the project root.
+By default assumes migrations are stored in the "sql" directory in the
+project root.
+
+=head1 COMMAND LINE INTERFACE
+
+For documentation regarding the command line interface see L<sqlite-migrate>.
 
 =head1 MIGRATIONS
 
