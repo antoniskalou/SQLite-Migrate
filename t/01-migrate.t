@@ -11,6 +11,8 @@ use SQLite::Migrate qw(migrate rollback version status);
 use Path::Tiny qw(path);
 use File::Temp qw(tempdir);
 
+my $noop = sub {};
+
 my $test_dir = path(tempdir(CLEANUP => 1));
 diag("Using test directory: $test_dir");
 
@@ -61,7 +63,7 @@ note('status on empty');
 
 note('migrate to latest');
 {
-  is( migrate($dbh), 2, 'user_version=2' );
+  is( migrate($dbh, log => $noop), 2, 'user_version=2' );
   is( version($dbh), 2, 'version($dbh) = 2' );
   lives_ok {
     $dbh->selectrow_array('select 1 from t1');
@@ -79,7 +81,7 @@ note('migrate to latest');
 
 note('rollback one migration');
 {
-  is( rollback($dbh, 1), 1, 'user_version=1' );
+  is( rollback($dbh, 1, log => $noop), 1, 'user_version=1' );
   is( version($dbh), 1, 'version($dbh) = 1' );
   throws_ok {
     $dbh->selectrow_array('select 1 from t2');
@@ -99,7 +101,7 @@ note('rollback one migration');
 }
 
 note('remigrate to latest');
-is( migrate($dbh), 2, 'user_version=2' );
+is( migrate($dbh, log => $noop), 2, 'user_version=2' );
 lives_ok {
   $dbh->selectrow_array('select 1 from t1');
   $dbh->selectrow_array('select 1 from t2');
@@ -107,7 +109,7 @@ lives_ok {
 
 note('rollback completely');
 {
-  is( rollback($dbh), 0, 'user_version=0' );
+  is( rollback($dbh, undef, log => $noop), 0, 'user_version=0' );
   is( version($dbh), 0, 'version($dbh) = 0' );
   throws_ok {
     $dbh->selectrow_array('select 1 from t2');
@@ -126,10 +128,13 @@ note('rollback completely');
 }
 
 note('rollback to garbage version');
-TODO: {
-  local $TODO = "figure out what to do in this case";
-  is(rollback($dbh, 10000), 0);
-  is(rollback($dbh, 'blabla'), 0);
+{
+  is(migrate($dbh, log => $noop), 2, 'remigrate');
+  is(rollback($dbh, 2, log => $noop), 2, 'migrate to current version');
+
+  throws_ok { rollback($dbh, -1); } qr/invalid target version/;
+  throws_ok { rollback($dbh, 1000) } qr/invalid target version/;
+  throws_ok { rollback($dbh, 'blabla') } qr/invalid target version/;
 }
 
 done_testing;

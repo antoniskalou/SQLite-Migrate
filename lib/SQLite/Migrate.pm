@@ -8,6 +8,7 @@ use open qw(:std :encoding(UTF-8));
 use Data::Dumper;
 use DBI;
 use Path::Tiny qw(path);
+use Scalar::Util qw(looks_like_number);
 use Carp qw(croak);
 use Exporter 'import';
 
@@ -136,11 +137,19 @@ my sub apply_migrations {
   my $version = user_version($dbh);
   my @files = migrations($direction);
 
+  if (defined $target &&
+    (! looks_like_number($target) || $target < 0 || $target > $version)) {
+    die "invalid target version '$target', must not be a number larger than "
+      . "current user_version=$version or smaller than 0";
+  }
+
   # was using builtin::indexed, but it caused a segfault when used with reverse
   my @pairs = map { [ $_, $files[$_] ] } 0..$#files;
   @pairs = reverse @pairs if $direction eq 'down';
 
   for my $pair (@pairs) {
+    last if defined $target && $version == $target;
+
     my ($i, $file) = @$pair;
     my $name = $file->basename;
 
@@ -160,8 +169,6 @@ my sub apply_migrations {
 
     run_sql_file($dbh, $file, $log);
     user_version($dbh, $version);
-
-    last if defined $target && $version == $target;
   }
 
   my $final = user_version($dbh);
