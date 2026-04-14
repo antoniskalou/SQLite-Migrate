@@ -7,7 +7,7 @@ use Test::More 'no_plan';
 use Test::Exception;
 
 use DBI qw();
-use SQLite::Migrate qw(migrate rollback version);
+use SQLite::Migrate qw(migrate rollback version status);
 use Path::Tiny qw(path);
 use File::Temp qw(tempdir);
 
@@ -48,23 +48,55 @@ $test_dir->child('001_t2.down.sql')->spew_utf8($t2_down_sql);
 
 my $dbh = connect_to_db(':memory:');
 
+note('status on empty');
+{
+  my $status = status($dbh);
+  is($status->{version}, 0, '$status->{version} = 0');
+  is_deeply($status->{pending}, [
+    $test_dir->child('000_t1.up.sql')->stringify,
+    $test_dir->child('001_t2.up.sql')->stringify,
+  ], 'all migrations are pending');
+  is_deeply($status->{applied}, [], 'no migrations applied');
+}
+
 note('migrate to latest');
-is( migrate($dbh), 2, 'user_version=2' );
-is( version($dbh), 2, 'version($dbh) = 2' );
-lives_ok {
-  $dbh->selectrow_array('select 1 from t1');
-  $dbh->selectrow_array('select 1 from t2');
-} 'select from both tables should succeed';
+{
+  is( migrate($dbh), 2, 'user_version=2' );
+  is( version($dbh), 2, 'version($dbh) = 2' );
+  lives_ok {
+    $dbh->selectrow_array('select 1 from t1');
+    $dbh->selectrow_array('select 1 from t2');
+  } 'select from both tables should succeed';
+
+  my $status = status($dbh);
+  is($status->{version}, 2, '$status->{version} = 2');
+  is_deeply($status->{pending}, [], '$status->{pending} is empty');
+  is_deeply($status->{applied}, [
+    $test_dir->child('000_t1.up.sql')->stringify,
+    $test_dir->child('001_t2.up.sql')->stringify,
+  ], '$status->{applied} has all migrations');
+}
 
 note('rollback one migration');
-is( rollback($dbh, 1), 1, 'user_version=1' );
-is( version($dbh), 1, 'version($dbh) = 1' );
-throws_ok {
-  $dbh->selectrow_array('select 1 from t2');
-} qr/no such table: t2/, 'select from t2 should fail';
-lives_ok {
-  $dbh -> selectrow_array('select 1 from t1');
-} 'select from t1 should still succeed';
+{
+  is( rollback($dbh, 1), 1, 'user_version=1' );
+  is( version($dbh), 1, 'version($dbh) = 1' );
+  throws_ok {
+    $dbh->selectrow_array('select 1 from t2');
+  } qr/no such table: t2/, 'select from t2 should fail';
+  lives_ok {
+    $dbh -> selectrow_array('select 1 from t1');
+  } 'select from t1 should still succeed';
+
+  my $status = status($dbh);
+  is($status->{version}, 1, '$status->{version} = 1');
+  is_deeply($status->{pending}, [
+    $test_dir->child('001_t2.up.sql')->stringify,
+  ], '$status->{pending} has one migration');
+  is_deeply($status->{applied}, [
+    $test_dir->child('000_t1.up.sql')->stringify,
+  ], '$status->{applied} has one migration');
+}
 
 note('remigrate to latest');
 is( migrate($dbh), 2, 'user_version=2' );
@@ -74,14 +106,24 @@ lives_ok {
 } 'select from both tables should succeed';
 
 note('rollback completely');
-is( rollback($dbh), 0, 'user_version=0' );
-is( version($dbh), 0, 'version($dbh) = 0' );
-throws_ok {
-  $dbh->selectrow_array('select 1 from t2');
-} qr/no such table: t2/, 'select from t2 should fail';
-throws_ok {
-  $dbh->selectrow_array('select 1 from t1');
-} qr/no such table: t1/, 'select from t1 should fail';
+{
+  is( rollback($dbh), 0, 'user_version=0' );
+  is( version($dbh), 0, 'version($dbh) = 0' );
+  throws_ok {
+    $dbh->selectrow_array('select 1 from t2');
+  } qr/no such table: t2/, 'select from t2 should fail';
+  throws_ok {
+    $dbh->selectrow_array('select 1 from t1');
+  } qr/no such table: t1/, 'select from t1 should fail';
+
+  my $status = status($dbh);
+  is($status->{version}, 0, '$status->{version} = 0');
+  is_deeply($status->{pending}, [
+    $test_dir->child('000_t1.up.sql')->stringify,
+    $test_dir->child('001_t2.up.sql')->stringify,
+  ], '$status->{pending} has all migrations');
+  is_deeply($status->{applied}, [], '$status->{applied} is empty');
+}
 
 done_testing;
 

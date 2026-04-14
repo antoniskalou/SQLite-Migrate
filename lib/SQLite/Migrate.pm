@@ -12,7 +12,7 @@ use Exporter 'import';
 
 our $VERSION = '0.1.0';
 
-our @EXPORT_OK = qw(migrate rollback version);
+our @EXPORT_OK = qw(migrate rollback version status);
 
 =head1 NAME
 
