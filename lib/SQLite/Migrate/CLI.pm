@@ -14,17 +14,23 @@ use Pod::Usage qw(pod2usage);
 
 my sub usage {
   my ($exit) = @_;
-  pod2usage(-verbose => 1, -exitval => $exit);
+  pod2usage(
+    -verbose => 1,
+    -exitval => 'NOEXIT',
+    -output => \*STDERR,
+  );
+  $exit;
 }
 
 my sub help {
-  pod2usage(-verbose => 2, exitval => 0);
+  pod2usage(-verbose => 2, exitval => 'NOEXIT');
+  0;
 }
 
 my sub error {
   my ($msg, $exit) = @_;
-  $exit //= 1;
   say STDERR $msg;
+  $exit //= 1;
   $exit;
 }
 

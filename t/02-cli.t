@@ -46,24 +46,17 @@ note("creates parent directory for db if it doesnt exist");
   ok($nested_db->exists, 'directory exists');
 }
 
-# FIXME: these cause the entire test suite to die horribly for some reason
-# note('no subcommand');
-# {
-#   my $exit;
-#   stderr_like {
-#     $exit = SQLite::Migrate::CLI::run();
-#   } qr/Usage/, 'prints usage';
-#   is($exit, 1, 'exit with failure');
-# }
+note('no subcommand');
+{
+  my $exit = SQLite::Migrate::CLI::run();
+  is($exit, 1, 'exit with failure');
+}
 
-# note('valid subcommand, no db specified');
-# {
-#   my $exit;
-#   stderr_like {
-#     $exit = SQLite::Migrate::CLI::run('deploy');
-#   } qr/Usage/, 'prints usage';
-#   is($exit, 1, 'exit with failure');
-# }
+note('valid subcommand, no db specified');
+{
+  my $exit = SQLite::Migrate::CLI::run('deploy');
+  is($exit, 1, 'exit with failure');
+}
 
 note('invalid command');
 {
