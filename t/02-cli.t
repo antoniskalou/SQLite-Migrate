@@ -69,19 +69,35 @@ note('invalid command');
 
 note('init is idempotent');
 {
-  is(run_cmd('init'), 0, 'exit success');
+  my $init_dir = $test_dir->child('init');
+  is(SQLite::Migrate::CLI::run('init', '--dir', "$init_dir"), 0, 'exit success');
 
   my %files = (
-    up => $test_dir->child('000_init.up.sql'),
-    down => $test_dir->child('000_init.down.sql'),
+    up => $init_dir->child('000_init.up.sql'),
+    down => $init_dir->child('000_init.down.sql'),
   );
 
   ok($_->is_file, "$_ exists") for values %files;
 
   my %stat = map { $_ => $files{$_}->stat } keys %files;
-  is(run_cmd('init'), 0, 'exit success');
+  is(SQLite::Migrate::CLI::run('init', '--dir', "$init_dir"), 0, 'exit success');
   is_deeply($files{$_}->stat, $stat{$_}, "$_ file unchanged")
     for keys %files;
+}
+
+note('status');
+{
+  my $exit;
+  my $stdout = stdout_from {
+    $exit = run_cmd('status');
+  };
+  is($exit, 0, 'exit success');
+  like($stdout, qr/Version: 0/, 'version correct');
+  like($stdout, qr/Applied: 0/, 'applied correct');
+  like($stdout, qr/Pending: 2/, 'pending correct');
+  like($stdout, qr/Applied migrations:\s+\(none\)/, 'applied migrations none');
+  like($stdout, qr/[ ] .*\/000_first.up.sql/, 'first migration pending');
+  like($stdout, qr/[ ] .*\/001_second.up.sql/, 'second migration pending')
 }
 
 note('deploy');
@@ -110,13 +126,5 @@ note('rollback');
   } qr/user_version=0/, 'user_version=0';
   is($exit, 0, 'exit success');
 }
-
-note('rollback to garbage version');
-TODO: {
-  local $TODO = "determine what to do in this case";
-  my $exit = run_cmd('rollback', '10000');
-  is($exit, 0, 'exit success');
-}
-
 
 done_testing;

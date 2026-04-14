@@ -125,6 +125,13 @@ note('rollback completely');
   is_deeply($status->{applied}, [], '$status->{applied} is empty');
 }
 
+note('rollback to garbage version');
+TODO: {
+  local $TODO = "figure out what to do in this case";
+  is(rollback($dbh, 10000), 0);
+  is(rollback($dbh, 'blabla'), 0);
+}
+
 done_testing;
 
 sub connect_to_db {
