@@ -26,6 +26,7 @@ WriteMakefile(
     'DBI' => '1.60',
     'DBD::SQLite' => '1.68',
     'Path::Tiny' => '0.144',
+    'Term::ANSIColor' => 0,
     'Getopt::Long' => 0,
     'Pod::Usage' => 0,
   },

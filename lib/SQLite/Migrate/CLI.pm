@@ -12,6 +12,13 @@ use Path::Tiny qw(path);
 
 use Getopt::Long qw(GetOptionsFromArray);
 use Pod::Usage qw(pod2usage);
+use Term::ANSIColor qw(colored);
+
+# TODO: consider moving to different module
+my sub info { say colored(shift, 'blue') }
+my sub success { say colored(shift, 'green') }
+my sub warn { say colored(shift, 'yellow') }
+my sub fail { say STDERR colored(shift, 'red') }
 
 my sub usage {
   my ($exit) = @_;
@@ -30,7 +37,7 @@ my sub help {
 
 my sub error {
   my ($msg, $exit) = @_;
-  say STDERR $msg;
+  fail $msg;
   $exit //= 1;
   $exit;
 }
@@ -76,7 +83,7 @@ SQL
 
   $up->spew_utf8($sql) unless $up->exists;
   $down->spew_utf8($sql) unless $down->exists;
-  say "Initialized migration directory at ${\$dir->absolute}";
+  success "Initialized migration directory at ${\$dir->absolute}";
   0;
 }
 
@@ -90,27 +97,29 @@ my sub cmd_status {
   my @applied = @{ $status->{applied} };
   my @pending = @{ $status->{pending} };
 
-  say "Database status";
-  say "---------------";
-  say "Version: $version";
-  say "Applied: ", scalar(@applied);
-  say "Pending: ", scalar(@pending);
+  info "Database status";
+  say "──────────────";
+
+  printf "%-10s %s\n", "Version:", colored($version, 'green');
+  printf "%-10s %d\n", "Applied:", scalar(@applied);
+  printf "%-10s %d\n", "Pending:", scalar(@pending);
+
   say "";
   
-  say "Applied migrations:";
+  say colored("Applied migrations:", 'bold');
   if (@applied) {
-    say "  [✓] $_" for @applied;
+    say map { '  ' . colored("✓ $_\n", 'green')  } @applied;
   } else {
-    say "  (none)";
+    say colored('  (none)', 'faint');
   }
 
   say "";
 
-  say "Pending migrations:";
+  say colored("Pending migrations:", 'bold');
   if (@pending) {
-    say "  [ ] $_" for @pending;
+    say map { '  ' . colored("• $_\n", 'yellow') } @pending;
   } else {
-    say "  (none)";
+    say colored('  (none)', 'faint');
   }
   
   0;

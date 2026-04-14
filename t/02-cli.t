@@ -11,6 +11,8 @@ use Path::Tiny qw(path);
 use SQLite::Migrate qw();
 use SQLite::Migrate::CLI qw();
 
+use Term::ANSIColor qw(colorstrip);
+
 my $test_dir = path(tempdir(CLEANUP => 1));
 my $test_db = $test_dir->child('test.db');
 
@@ -91,10 +93,11 @@ note('status');
   my $stdout = stdout_from {
     $exit = run_cmd('status');
   };
+  $stdout = colorstrip($stdout);
   is($exit, 0, 'exit success');
-  like($stdout, qr/Version: 0/, 'version correct');
-  like($stdout, qr/Applied: 0/, 'applied correct');
-  like($stdout, qr/Pending: 2/, 'pending correct');
+  like($stdout, qr/Version:\s+0/, 'version correct');
+  like($stdout, qr/Applied:\s+0/, 'applied correct');
+  like($stdout, qr/Pending:\s+2/, 'pending correct');
   like($stdout, qr/Applied migrations:\s+\(none\)/, 'applied migrations none');
   like($stdout, qr/[ ] .*\/000_first.up.sql/, 'first migration pending');
   like($stdout, qr/[ ] .*\/001_second.up.sql/, 'second migration pending')
