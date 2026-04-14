@@ -17,6 +17,7 @@ __END__
 
   sqlite-migrate <command> <db_path> [options]
 
+  sqlite-migrate init
   sqlite-migrate deploy <db_path>
   sqlite-migrate rollback <db_path> [version]
 
@@ -29,6 +30,17 @@ A directory containing migration files (defaults to ./sql).
 =head1 COMMANDS
 
 =over 4
+
+=item B<init>
+
+Initialize the SQL migration directory, creating templates for an initial
+up and down migration.
+
+Example:
+
+  sqlite-migrate init
+
+  # creates sql/000_init.up.sql and sql/000_init.down.sql
 
 =item B<deploy>
 

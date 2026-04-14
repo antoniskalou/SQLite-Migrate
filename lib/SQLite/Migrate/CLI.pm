@@ -34,6 +34,37 @@ my sub error {
   $exit;
 }
 
+my sub cmd_init {
+  my (@args) = @_;
+
+  my $sql = <<SQL;
+begin;
+
+-- code goes here!
+
+commit;
+SQL
+  
+  my $dir = path($SQLite::Migrate::MIGRATION_DIR);
+  $dir->mkdir;
+  $dir->child('000_init.up.sql')->spew_utf8($sql);
+  $dir->child('000_init.down.sql')->spew_utf8($sql);
+  say "Initialized migration directory at ${\$dir->absolute}";
+  0;
+}
+
+my sub cmd_deploy {
+  my ($dbh, @args) = @_;
+  SQLite::Migrate::migrate($dbh, @args);
+  0;
+}
+
+my sub cmd_rollback {
+  my ($dbh, @args) = @_;
+  SQLite::Migrate::rollback($dbh, @args);
+  0;
+}
+
 sub run {
   my (@argv) = @_;
 
@@ -71,8 +102,9 @@ sub run {
   }) or return error("failed to connect to database '$dbi': $DBI::errstr");
 
   my %command_to_sub = (
-    deploy => \&SQLite::Migrate::migrate,
-    rollback => \&SQLite::Migrate::rollback,
+    init => \&cmd_init,
+    deploy => \&cmd_deploy,
+    rollback => \&cmd_rollback,
   );
 
   my $sub = $command_to_sub{$command}
