@@ -22,15 +22,20 @@ SQLite::Migration - Lightweight migration tool/library for SQLite
 
 =head1 SYNOPSIS
 
-  use SQLite::Migration qw(migrate rollback);
+  use SQLite::Migration qw(migrate rollback version status);
 
   my $dbh = connect_to_database();
+
   # migrate to latest changes
-  migrate($dbh);
+  my $version = migrate($dbh);
+  # $version == version($dbh)
+
   # rollback to migration 2
   rollback($dbh, 2);
   # rollback all the way
   rollback($dbh);
+
+  my $status = status($dbh);
 
 =head1 DESCRIPTION
 
